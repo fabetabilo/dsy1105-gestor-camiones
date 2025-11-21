@@ -32,4 +32,10 @@ public class CamionService {
     public void deleteById(Integer id) {
         this.camionRepository.deleteById(id);
     }
+
+    public boolean existsById(Integer id) {
+        // retorna true si existe
+        return this.camionRepository.existsById(id);
+    }
+
 }
