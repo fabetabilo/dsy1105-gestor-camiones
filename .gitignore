@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+## Despliegue ec2 aws, par de llaves unica
+llave-log-austral.pem
