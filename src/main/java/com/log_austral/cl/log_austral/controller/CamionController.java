@@ -12,10 +12,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.log_austral.cl.log_austral.model.Camion;
 import com.log_austral.cl.log_austral.service.CamionService;
+import com.log_austral.cl.log_austral.service.ArchivoService;
 
 @RestController
 @RequestMapping("/api/v1/camion")
@@ -24,14 +27,15 @@ public class CamionController {
     @Autowired
     private CamionService camionService;
 
+    @Autowired
+    private ArchivoService archivoService;
+
     @GetMapping("/{id}")
     public ResponseEntity<Camion> getCamionById(@PathVariable Integer id) {
         try {
             Camion camionGet = this.camionService.findById(id);
             return ResponseEntity.ok(camionGet);
-        
         } catch (Exception e) {
-            // para cuando no encuentre nada con ese id, construye la respuesta Not Found
             return ResponseEntity.notFound().build();
         }
     }
@@ -51,40 +55,69 @@ public class CamionController {
             Camion camionPost = this.camionService.saveCamion(camion);
             return ResponseEntity.status(HttpStatus.CREATED).body(camionPost);
         } catch (Exception e) {
-            // maneja la excepcion en caso de que elc uerpo body sea invalido
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+    // crear camion con imagen (multipart: camion + file)
+    @PostMapping(value = "/with-image", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> saveCamionWithImage(
+            @RequestPart("camion") Camion camion,
+            @RequestPart("file") MultipartFile file) {
+        try {
+            String uri = archivoService.store(file);
+            camion.setImagenUri(uri);
+            Camion saved = camionService.saveCamion(camion);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al crear camion con imagen");
+        }
+    }
+
+    // Subir/actualizar imagen de un camion existente
+    @PostMapping(value = "/{id}/imagen", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> uploadImagen(@PathVariable Integer id, @RequestPart("file") MultipartFile file) {
+        try {
+            if (!camionService.existsById(id)) {
+                return ResponseEntity.notFound().build();
+            }
+            String uri = archivoService.store(file);
+            Camion existente = camionService.findById(id);
+            existente.setImagenUri(uri);
+            Camion actualizado = camionService.saveCamion(existente);
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al subir imagen");
         }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Camion> putCamion(@PathVariable Integer id, @RequestBody Camion camion) {
         try {
-            if (this.camionService.existsById(id)) {
-                // el camion que actualiza, es el que viene buscado por su id
-                Camion camionPut = this.camionService.findById(id);
-
-                // setea los valores a actualizar
-                camionPut.setId(id);
-                camionPut.setPatente(camionPut.getPatente());
-                camionPut.setMarca(camionPut.getMarca());
-                camionPut.setModelo(camionPut.getModelo());
-                camionPut.setAnnio(camionPut.getAnnio());
-                camionPut.setTipo(camionPut.getTipo());
-                camionPut.setCapacidad(camionPut.getCapacidad());
-                camionPut.setDisponibilidad(camionPut.getDisponibilidad());
-                camionPut.setEstado(camionPut.getEstado());
-                camionPut.setDescripcion(camionPut.getDescripcion());
-                camionPut.setTraccion(camionPut.getTraccion());
-                camionPut.setPrecio(camionPut.getPrecio());
-                camionPut.setImagenUri(camionPut.getImagenUri());
-
-                this.camionService.saveCamion(camionPut);
-                return ResponseEntity.ok(camion);
-            
-            } else {
+            if (!this.camionService.existsById(id)) {
                 return ResponseEntity.notFound().build();
             }
-
+            Camion existente = this.camionService.findById(id);
+            existente.setPatente(camion.getPatente());
+            existente.setMarca(camion.getMarca());
+            existente.setModelo(camion.getModelo());
+            existente.setAnnio(camion.getAnnio());
+            existente.setTipo(camion.getTipo());
+            existente.setCapacidad(camion.getCapacidad());
+            existente.setDisponibilidad(camion.getDisponibilidad());
+            existente.setEstado(camion.getEstado());
+            existente.setDescripcion(camion.getDescripcion());
+            existente.setTraccion(camion.getTraccion());
+            existente.setPrecio(camion.getPrecio());
+            if (camion.getImagenUri() != null) {
+                existente.setImagenUri(camion.getImagenUri());
+            }
+            Camion actualizado = this.camionService.saveCamion(existente);
+            return ResponseEntity.ok(actualizado);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
@@ -95,12 +128,8 @@ public class CamionController {
         try {
             this.camionService.deleteById(id);
             return ResponseEntity.noContent().build();
-
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
     }
-
-
-
 }
