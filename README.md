@@ -87,17 +87,83 @@ SOURCE demo.sql; -- (o copiar/pegar su contenido)
 ## Endpoints REST
 Base path: `/api/v1/camion`
 
-| Método | Ruta                | Descripción                          | Respuestas clave |
-|--------|---------------------|--------------------------------------|------------------|
-| GET    | `/api/v1/camion`    | Listar todos los camiones            | 200 / 204        |
-| GET    | `/api/v1/camion/{id}` | Obtener un camión por ID            | 200 / 404        |
-| POST   | `/api/v1/camion`    | Crear nuevo camión                   | 201 / 400        |
-| PUT    | `/api/v1/camion/{id}` | Actualizar campos de un camión (ver nota) | 200 / 404 / 400 |
-| DELETE | `/api/v1/camion/{id}` | Eliminar un camión                  | 204 / 404        |
+| Método | Ruta                          | Descripción                                                      | Respuestas clave |
+|--------|-------------------------------|------------------------------------------------------------------|------------------|
+| GET    | `/api/v1/camion`              | Listar todos los camiones                                        | 200 / 204        |
+| GET    | `/api/v1/camion/{id}`         | Obtener un camión por ID                                          | 200 / 404        |
+| POST   | `/api/v1/camion`              | Crear nuevo camión (JSON simple)                                 | 201 / 400        |
+| POST   | `/api/v1/camion/with-image`   | Crear camión con imagen (multipart: `camion` + `file`)           | 201 / 400 / 500  |
+| POST   | `/api/v1/camion/{id}/imagen`  | Subir/actualizar imagen de un camión existente                   | 200 / 404 / 400 / 500 |
+| PUT    | `/api/v1/camion/{id}`         | Actualizar campos (usa datos del JSON enviado)                   | 200 / 404 / 400 |
+| DELETE | `/api/v1/camion/{id}`         | Eliminar un camión                                               | 204 / 404        |
 
-> Nota sobre PUT: La implementación actual reasigna los mismos valores existentes (no aplica los enviados en el cuerpo). Recomendado mejorar para usar los datos del `@RequestBody`.
+Nota PUT: Lógica ya corregida; ahora aplica los valores del body. Si `imagenUri` viene `null` se conserva la existente.
 
-### Ejemplo JSON (POST)
+### Subida de Camión con Imagen (Multipart)
+Archivo de ejemplos: `demoJSON.txt` (en la raíz del repo) contiene varios cuerpos JSON usados para la key `camion` en Postman.
+
+POST `http://HOST:8080/api/v1/camion/with-image`
+
+Body → form-data (NO usar raw):
+| Key     | Tipo    | Content-Type       | Descripción                                           |
+|---------|---------|--------------------|-------------------------------------------------------|
+| camion  | Text    | application/json   | JSON de la entidad (sin `imagenUri`, se genera luego) |
+| file    | File    | auto (imagen)      | Archivo de imagen (.jpg, .png, .webp)                 |
+
+Ejemplo valor para key `camion` (extraído de `demoJSON.txt`):
+```json
+{
+	"patente": "AAA111",
+	"marca": "Mercedes-Benz",
+	"modelo": "Actros 1845",
+	"annio": 2020,
+	"tipo": "Tracto",
+	"capacidad": 32000,
+	"disponibilidad": true,
+	"estado": "Disponible",
+	"descripcion": "Actros para larga distancia",
+	"traccion": "6x4",
+	"precio": 84500000
+}
+```
+
+Ejemplo respuesta 201:
+```json
+{
+	"id": 1,
+	"patente": "AAA111",
+	"marca": "Mercedes-Benz",
+	"modelo": "Actros 1845",
+	"annio": 2020,
+	"tipo": "Tracto",
+	"capacidad": 32000,
+	"disponibilidad": true,
+	"estado": "Disponible",
+	"descripcion": "Actros para larga distancia",
+	"traccion": "6x4",
+	"precio": 84500000,
+	"imagenUri": "/camiones/a71a39be-1fd3-4279-8ede-43ad21668edc.png"
+}
+```
+
+Acceso a la imagen: `http://HOST:8080/camiones/a71a39be-1fd3-4279-8ede-43ad21668edc.png`
+
+Ejemplo cURL multipart:
+```bash
+curl -X POST http://HOST:8080/api/v1/camion/with-image \
+	-F 'camion={"patente":"AAA111","marca":"Mercedes-Benz","modelo":"Actros 1845","annio":2020,"tipo":"Tracto","capacidad":32000,"disponibilidad":true,"estado":"Disponible","descripcion":"Actros para larga distancia","traccion":"6x4","precio":84500000};type=application/json' \
+	-F 'file=@./actros1845.png'
+```
+
+Actualizar solo imagen de un camión existente:
+```bash
+curl -X POST http://HOST:8080/api/v1/camion/1/imagen \
+	-F 'file=@./nueva.png'
+```
+
+Si se desea actualizar datos SIN cambiar imagen: usar PUT y omitir `imagenUri`.
+
+### Ejemplo JSON (POST simple sin imagen)
 ```json
 {
 	"patente": "ZZZ999",
@@ -141,13 +207,13 @@ curl -X POST http://localhost:8080/api/v1/camion \
 3. Validar códigos de estado esperados: 201 para creación, 200 para lecturas, 204 en borrado.
 
 ## Imágenes Públicas
-El campo `imagenUri` referencia una ruta pública servida (por ejemplo, mapeada desde un directorio estático). Debes exponer el directorio `/public/camiones` si decides manejar archivos estáticos.
+`imagenUri` se construye automáticamente al subir archivos y apunta al directorio público configurado (ej. `/opt/spring/public/camiones`). Spring sirve estos recursos añadiendo la ubicación en `spring.web.resources.static-locations`. Para que se vea externamente, bastará acceder a `http://HOST:8080/camiones/<nombre>.ext`.
 
 ## Mejoras Futuras
 - Corrección lógica del método PUT para aplicar datos del body.
 - Manejo de validaciones (Bean Validation + mensajes claros).
 - Paginación y filtros en listado.
-- Gestión de subida de imágenes (multipart) en lugar de ruta manual.
+- Validación adicional de tipo MIME y tamaño de imagen.
 - Cambiar a versión estable de Spring Boot.
 
 ## Licencia

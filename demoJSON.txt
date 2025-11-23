@@ -1,0 +1,58 @@
+Prueba para POSTs individuales con POSTMAN
+La imagen se agrega mediante key - file -> Select files
+
+{
+  "patente": "AAA111",
+  "marca": "Mercedes-Benz",
+  "modelo": "Actros 1845",
+  "annio": 2020,
+  "tipo": "Tracto",
+  "capacidad": 32000,
+  "disponibilidad": true,
+  "estado": "Disponible",
+  "descripcion": "Actros para larga distancia",
+  "traccion": "6x4",
+  "precio": 84500000
+}
+
+{
+  "patente": "IVC2010",
+  "marca": "Iveco",
+  "modelo": "Stralis",
+  "annio": 2010,
+  "tipo": "Tracto",
+  "capacidad": 40000,
+  "disponibilidad": true,
+  "estado": "Disponible",
+  "descripcion": "Stralis 2010, 6 ejes, ideal para carga pesada",
+  "traccion": "6x2",
+  "precio": 52000000
+}
+
+{
+  "patente": "PAC16X4",
+  "marca": "Pacific",
+  "modelo": "P16",
+  "annio": 2008,
+  "tipo": "Tracto",
+  "capacidad": 38000,
+  "disponibilidad": true,
+  "estado": "Disponible",
+  "descripcion": "Pacific P16, tracción 6x4, robusto para faena",
+  "traccion": "6x4",
+  "precio": 48000000
+}
+
+{
+  "patente": "SCR5004E",
+  "marca": "Scania",
+  "modelo": "R500",
+  "annio": 2015,
+  "tipo": "Tracto",
+  "capacidad": 32000,
+  "disponibilidad": true,
+  "estado": "Disponible",
+  "descripcion": "Scania R500, 4 ejes, alto rendimiento",
+  "traccion": "8x4",
+  "precio": 69000000
+}
